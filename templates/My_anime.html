@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>My Anime — AnimeSora</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+
+  <body>
+    <!-- ========================================
+     NAVBAR
+     ======================================== -->
+
+    <nav class="navbar">
+      <div class="navbar-brand">AnimeSora</div>
+
+      <div class="navbar-links">
+        <a href="{{ url_for('home') }}"> Home </a>
+
+        <a href="{{ url_for('schedule') }}"> Schedule </a>
+
+        <a href="{{ url_for('my_anime') }}" class="active"> My Anime </a>
+      </div>
+    </nav>
+
+    <!-- ========================================
+     MAIN CONTENT
+     ======================================== -->
+
+    <main class="page-container">
+      <!-- ====================================
+         PAGE HEADER
+         ==================================== -->
+
+      <section class="page-header">
+        <div>
+          <p class="page-eyebrow">YOUR COLLECTION</p>
+
+          <h1>My Anime</h1>
+
+          <p>Search for anime and build your personal collection.</p>
+        </div>
+      </section>
+
+      <!-- ====================================
+         SEARCH
+         ==================================== -->
+
+      <section class="anime-search-section">
+        <form
+          action="{{ url_for('search_anime_route') }}"
+          method="GET"
+          class="anime-search-form"
+        >
+          <input
+            type="text"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="Search anime..."
+            autocomplete="off"
+          />
+
+          <button type="submit">Search</button>
+        </form>
+      </section>
+
+      <!-- ====================================
+         SEARCH RESULTS
+         ==================================== -->
+
+      {% if search_performed %}
+
+      <section class="anime-search-results">
+        <div class="section-heading">
+          <h2>Search Results</h2>
+
+          <span> {{ search_results|length }} results </span>
+        </div>
+
+        {% if search_results %}
+
+        <div class="anime-search-grid">
+          {% for item in search_results %}
+
+          <article
+            class="anime-search-card anime-clickable-card"
+            data-title="{{ item.get('title', '') | e }}"
+            data-english-title="{{ item.get('title_english', '') | e }}"
+            data-romaji-title="{{ item.get('title_romaji', '') | e }}"
+            data-native-title="{{ item.get('title_native', '') | e }}"
+            data-image="{{ item.get('image', '') | e }}"
+            data-episodes="{{ item.get('episodes', '') or '' }}"
+            data-score="{{ item.get('score', '') or '' }}"
+            data-status="{{ item.get('status', '') | e }}"
+            data-type="{{ item.get('type', '') | e }}"
+            data-start-date="{{ item.get('start_date', '') | e }}"
+            data-end-date="{{ item.get('end_date', '') | e }}"
+            data-synopsis="{{ item.get('synopsis', '') | e }}"
+          >
+            <div class="anime-search-image-wrapper">
+              {% if item.get('image') %}
+
+              <img
+                src="{{ item.get('image') }}"
+                alt="{{ item.get('title', 'Anime') | e }}"
+                class="anime-search-image"
+              />
+
+              {% else %}
+
+              <div class="anime-image-placeholder">No Image</div>
+
+              {% endif %}
+            </div>
+
+            <div class="anime-search-info">
+              <h3>{{ item.get('title', 'Unknown Anime') }}</h3>
+
+              {% if item.get('title_native') %}
+
+              <p class="anime-native-title">{{ item.get('title_native') }}</p>
+
+              {% endif %}
+
+              <div class="anime-search-meta">
+                {% if item.get('episodes') %}
+                <span> {{ item.get('episodes') }} Episodes </span>
+                {% endif %} {% if item.get('score') %}
+                <span> ★ {{ item.get('score') }} </span>
+                {% endif %} {% if item.get('type') %}
+                <span> {{ item.get('type') }} </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- ====================================
+                     ADD FORM
+                     ==================================== -->
+
+            <form
+              action="{{ url_for('add_anime_route') }}"
+              method="POST"
+              class="add-anime-form"
+            >
+              <input
+                type="hidden"
+                name="title"
+                value="{{ item.get('title', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="title_english"
+                value="{{ item.get('title_english', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="title_romaji"
+                value="{{ item.get('title_romaji', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="title_native"
+                value="{{ item.get('title_native', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="poster"
+                value="{{ item.get('image', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="total_episodes"
+                value="{{ item.get('episodes', '') or '' }}"
+              />
+
+              <input
+                type="hidden"
+                name="score"
+                value="{{ item.get('score', '') or '' }}"
+              />
+
+              <input
+                type="hidden"
+                name="anime_status"
+                value="{{ item.get('status', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="anime_type"
+                value="{{ item.get('type', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="start_date"
+                value="{{ item.get('start_date', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="end_date"
+                value="{{ item.get('end_date', '') | e }}"
+              />
+
+              <input
+                type="hidden"
+                name="synopsis"
+                value="{{ item.get('synopsis', '') | e }}"
+              />
+
+              <input type="hidden" name="release_day" value="" />
+
+              <input type="hidden" name="status" value="Plan to Watch" />
+
+              <input type="hidden" name="current_episode" value="0" />
+
+              <button type="submit" class="add-anime-button">+ Add</button>
+            </form>
+          </article>
+
+          {% endfor %}
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+          <h3>No anime found</h3>
+
+          <p>Try searching for another anime.</p>
+        </div>
+
+        {% endif %}
+      </section>
+
+      {% endif %}
+
+      <!-- ====================================
+         MY COLLECTION
+         ==================================== -->
+
+      <section class="my-anime-section">
+        <div class="section-heading">
+          <div>
+            <p class="page-eyebrow">COLLECTION</p>
+
+            <h2>My Anime</h2>
+          </div>
+
+          <span> {{ anime|length }} anime </span>
+        </div>
+
+        {% if anime %}
+
+        <div class="anime-list">
+          {% for item in anime %}
+
+          <article
+            class="anime-list-card anime-clickable-card"
+            data-title="{{ item['title'] | e }}"
+            data-english-title="{{ (item['title_english'] or '') | e }}"
+            data-romaji-title="{{ (item['title_romaji'] or '') | e }}"
+            data-native-title="{{ (item['title_native'] or '') | e }}"
+            data-image="{{ (item['poster'] or '') | e }}"
+            data-episodes="{{ item['total_episodes'] or '' }}"
+            data-score="{{ item['score'] or '' }}"
+            data-status="{{ (item['anime_status'] or '') | e }}"
+            data-type="{{ (item['anime_type'] or '') | e }}"
+            data-start-date="{{ (item['start_date'] or '') | e }}"
+            data-end-date="{{ (item['end_date'] or '') | e }}"
+            data-synopsis="{{ (item['synopsis'] or '') | e }}"
+            data-current-episode="{{ item['current_episode'] }}"
+            data-user-status="{{ item['status'] | e }}"
+            data-id="{{ item['id'] }}"
+          >
+            <div class="anime-list-image">
+              {% if item['poster'] %}
+
+              <img src="{{ item['poster'] }}" alt="{{ item['title'] | e }}" />
+
+              {% else %}
+
+              <div class="anime-image-placeholder">No Image</div>
+
+              {% endif %}
+            </div>
+
+            <div class="anime-list-info">
+              <h3>{{ item['title'] }}</h3>
+
+              {% if item['title_native'] %}
+
+              <p class="anime-native-title">{{ item['title_native'] }}</p>
+
+              {% endif %}
+
+              <div class="anime-list-meta">
+                <span> {{ item['status'] }} </span>
+
+                <span>
+                  Episode {{ item['current_episode'] }} {% if
+                  item['total_episodes'] %} / {{ item['total_episodes'] }} {%
+                  endif %}
+                </span>
+
+                {% if item['score'] %}
+
+                <span> ★ {{ item['score'] }} </span>
+
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- ====================================
+                     ACTIONS
+                     ==================================== -->
+
+            <div class="anime-list-actions" onclick="event.stopPropagation()">
+              <button
+                type="button"
+                class="edit-anime-button"
+                data-id="{{ item['id'] }}"
+                data-title="{{ item['title'] | e }}"
+                data-status="{{ item['status'] | e }}"
+                data-current-episode="{{ item['current_episode'] }}"
+                data-score="{{ item['score'] or '' }}"
+              >
+                Edit
+              </button>
+
+              <form
+                action="/delete-anime/{{ item['id'] }}"
+                method="POST"
+                class="delete-anime-form"
+                onsubmit="
+                  return confirm('Remove this anime from your collection?');
+                "
+              >
+                <button type="submit" class="remove-anime-button">
+                  Remove
+                </button>
+              </form>
+            </div>
+          </article>
+
+          {% endfor %}
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+          <h3>Your collection is empty</h3>
+
+          <p>Search for an anime above and add it to your list.</p>
+        </div>
+
+        {% endif %}
+      </section>
+    </main>
+
+    <!-- ========================================
+     ANIME DETAILS MODAL
+     ======================================== -->
+
+    <div class="anime-details-modal" id="animeDetailsModal">
+      <div class="anime-details-backdrop" id="animeDetailsBackdrop"></div>
+
+      <div class="anime-details-panel">
+        <button
+          type="button"
+          class="anime-details-close"
+          id="animeDetailsClose"
+        >
+          ×
+        </button>
+
+        <div class="anime-details-content">
+          <div class="anime-details-poster-wrapper">
+            <img
+              src=""
+              alt=""
+              class="anime-details-poster"
+              id="detailsPoster"
+            />
+          </div>
+
+          <div class="anime-details-info">
+            <p class="page-eyebrow">ANIME DETAILS</p>
+
+            <h2 id="detailsTitle">Anime Title</h2>
+
+            <p class="anime-details-alternate" id="detailsAlternateTitles"></p>
+
+            <div class="anime-details-meta" id="detailsMeta"></div>
+
+            <div class="anime-details-description">
+              <h3>Synopsis</h3>
+
+              <p id="detailsSynopsis">No synopsis available.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+     EDIT MODAL
+     ======================================== -->
+
+    <div class="anime-details-modal" id="editAnimeModal">
+      <div class="anime-details-backdrop" id="editAnimeBackdrop"></div>
+
+      <div class="edit-anime-panel">
+        <button type="button" class="anime-details-close" id="editAnimeClose">
+          ×
+        </button>
+
+        <p class="page-eyebrow">UPDATE ENTRY</p>
+
+        <h2>Edit Anime</h2>
+
+        <p class="edit-anime-subtitle" id="editAnimeTitle">Anime</p>
+
+        <form method="POST" id="editAnimeForm">
+          <div class="edit-form-group">
+            <label for="editStatus"> Status </label>
+
+            <select name="status" id="editStatus">
+              <option value="Plan to Watch">Plan to Watch</option>
+
+              <option value="Watching">Watching</option>
+
+              <option value="Completed">Completed</option>
+
+              <option value="On Hold">On Hold</option>
+
+              <option value="Dropped">Dropped</option>
+            </select>
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editEpisode"> Current Episode </label>
+
+            <input
+              type="number"
+              name="current_episode"
+              id="editEpisode"
+              min="0"
+            />
+          </div>
+
+          <div class="edit-form-group">
+            <label for="editScore"> Your Score </label>
+
+            <input
+              type="number"
+              name="score"
+              id="editScore"
+              min="0"
+              max="10"
+              step="0.1"
+              placeholder="0 - 10"
+            />
+          </div>
+
+          <p class="edit-help-text">
+            Your personal status, episode progress and score can be changed
+            here.
+          </p>
+
+          <button type="submit" class="edit-save-button">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================
+     JAVASCRIPT
+     ======================================== -->
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ====================================
+        // DETAILS MODAL
+        // ====================================
+
+        const detailsModal = document.getElementById("animeDetailsModal");
+
+        const detailsBackdrop = document.getElementById("animeDetailsBackdrop");
+
+        const detailsClose = document.getElementById("animeDetailsClose");
+
+        const detailsPoster = document.getElementById("detailsPoster");
+
+        const detailsTitle = document.getElementById("detailsTitle");
+
+        const detailsAlternateTitles = document.getElementById(
+          "detailsAlternateTitles",
+        );
+
+        const detailsMeta = document.getElementById("detailsMeta");
+
+        const detailsSynopsis = document.getElementById("detailsSynopsis");
+
+        function openDetails(card) {
+          const title = card.dataset.title || "Unknown Anime";
+
+          const englishTitle = card.dataset.englishTitle || "";
+
+          const romajiTitle = card.dataset.romajiTitle || "";
+
+          const nativeTitle = card.dataset.nativeTitle || "";
+
+          const image = card.dataset.image || "";
+
+          const episodes = card.dataset.episodes || "";
+
+          const score = card.dataset.score || "";
+
+          const status = card.dataset.status || "";
+
+          const type = card.dataset.type || "";
+
+          const startDate = card.dataset.startDate || "";
+
+          const endDate = card.dataset.endDate || "";
+
+          const synopsis = card.dataset.synopsis || "";
+
+          // Poster
+
+          if (image) {
+            detailsPoster.src = image;
+            detailsPoster.style.display = "block";
+          } else {
+            detailsPoster.removeAttribute("src");
+
+            detailsPoster.style.display = "none";
+          }
+
+          // Title
+
+          detailsTitle.textContent = title;
+
+          // Alternate titles
+
+          const alternateTitles = [];
+
+          if (englishTitle && englishTitle !== title) {
+            alternateTitles.push(englishTitle);
+          }
+
+          if (
+            romajiTitle &&
+            romajiTitle !== title &&
+            romajiTitle !== englishTitle
+          ) {
+            alternateTitles.push(romajiTitle);
+          }
+
+          if (
+            nativeTitle &&
+            nativeTitle !== title &&
+            nativeTitle !== englishTitle &&
+            nativeTitle !== romajiTitle
+          ) {
+            alternateTitles.push(nativeTitle);
+          }
+
+          detailsAlternateTitles.textContent = alternateTitles.join(" • ");
+
+          // Meta
+
+          detailsMeta.innerHTML = "";
+
+          if (type) {
+            addMetaItem(type);
+          }
+
+          if (status) {
+            addMetaItem(status);
+          }
+
+          if (episodes) {
+            addMetaItem(episodes + " Episodes");
+          }
+
+          if (score) {
+            addMetaItem("★ " + score);
+          }
+
+          if (startDate) {
+            addMetaItem("Started " + formatDate(startDate));
+          }
+
+          if (endDate) {
+            addMetaItem("Ended " + formatDate(endDate));
+          }
+
+          // Synopsis
+
+          detailsSynopsis.textContent = synopsis || "No synopsis available.";
+
+          // Open
+
+          detailsModal.classList.add("open");
+
+          document.body.style.overflow = "hidden";
+        }
+
+        function addMetaItem(text) {
+          const span = document.createElement("span");
+
+          span.textContent = text;
+
+          detailsMeta.appendChild(span);
+        }
+
+        function formatDate(dateString) {
+          const date = new Date(dateString + "T00:00:00");
+
+          if (Number.isNaN(date.getTime())) {
+            return dateString;
+          }
+
+          return date.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+
+        function closeDetails() {
+          detailsModal.classList.remove("open");
+
+          document.body.style.overflow = "";
+        }
+
+        // ====================================
+        // CLICKABLE ANIME CARDS
+        // ====================================
+
+        document
+          .querySelectorAll(".anime-clickable-card")
+          .forEach(function (card) {
+            card.addEventListener("click", function (event) {
+              if (event.target.closest(".add-anime-form")) {
+                return;
+              }
+
+              if (event.target.closest(".anime-list-actions")) {
+                return;
+              }
+
+              openDetails(card);
+            });
+          });
+
+        // ====================================
+        // CLOSE DETAILS
+        // ====================================
+
+        detailsClose.addEventListener("click", closeDetails);
+
+        detailsBackdrop.addEventListener("click", closeDetails);
+
+        // ====================================
+        // EDIT MODAL
+        // ====================================
+
+        const editModal = document.getElementById("editAnimeModal");
+
+        const editBackdrop = document.getElementById("editAnimeBackdrop");
+
+        const editClose = document.getElementById("editAnimeClose");
+
+        const editForm = document.getElementById("editAnimeForm");
+
+        const editTitle = document.getElementById("editAnimeTitle");
+
+        const editStatus = document.getElementById("editStatus");
+
+        const editEpisode = document.getElementById("editEpisode");
+
+        const editScore = document.getElementById("editScore");
+
+        document
+          .querySelectorAll(".edit-anime-button")
+          .forEach(function (button) {
+            button.addEventListener("click", function () {
+              const id = button.dataset.id;
+
+              const title = button.dataset.title;
+
+              const status = button.dataset.status;
+
+              const episode = button.dataset.currentEpisode;
+
+              const score = button.dataset.score;
+
+              editTitle.textContent = title;
+
+              editStatus.value = status;
+
+              editEpisode.value = episode;
+
+              editScore.value = score;
+
+              editForm.action = "/edit-anime/" + id;
+
+              editModal.classList.add("open");
+
+              document.body.style.overflow = "hidden";
+            });
+          });
+
+        function closeEdit() {
+          editModal.classList.remove("open");
+
+          document.body.style.overflow = "";
+        }
+
+        editClose.addEventListener("click", closeEdit);
+
+        editBackdrop.addEventListener("click", closeEdit);
+
+        // ====================================
+        // ESCAPE KEY
+        // ====================================
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") {
+            closeDetails();
+
+            closeEdit();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

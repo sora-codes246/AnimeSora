@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>AnimeSora</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="logo">Anime<span>Sora</span></div>
+
+      <div class="nav-links">
+        <a href="/" class="active"> Home </a>
+
+        <a href="/schedule"> Schedule </a>
+
+        <a href="/my-anime"> My Anime </a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">YOUR PERSONAL ANIME DIARY</p>
+
+          <h1>
+            Never miss<br />
+            an <span>episode.</span>
+          </h1>
+
+          <p class="description">
+            Keep track of what you're watching, discover what's airing, and
+            build your own anime collection.
+          </p>
+
+          <div class="hero-buttons">
+            <a href="/schedule" class="primary-button"> Explore Schedule </a>
+
+            <a href="/my-anime" class="secondary-button"> My Anime </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Today's Episodes -->
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">WHAT'S AIRING</p>
+
+            <h2>Today's Episodes</h2>
+          </div>
+
+          <a href="/schedule"> View schedule → </a>
+        </div>
+
+        <div class="episode-grid">
+          <div class="episode-card">
+            <div class="poster-placeholder">ANIME</div>
+
+            <div class="episode-info">
+              <h3>Your Anime</h3>
+
+              <p>Episode 01</p>
+
+              <span> Today </span>
+            </div>
+          </div>
+
+          <div class="episode-card">
+            <div class="poster-placeholder">ANIME</div>
+
+            <div class="episode-info">
+              <h3>Another Anime</h3>
+
+              <p>Episode 12</p>
+
+              <span> Today </span>
+            </div>
+          </div>
+
+          <div class="episode-card">
+            <div class="poster-placeholder">ANIME</div>
+
+            <div class="episode-info">
+              <h3>Coming Soon</h3>
+
+              <p>Episode 08</p>
+
+              <span> Today </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Anime Overview -->
+      <section class="section">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">YOUR COLLECTION</p>
+
+            <h2>My Anime</h2>
+          </div>
+
+          <a href="/my-anime"> View all → </a>
+        </div>
+
+        <div class="stats">
+          <!-- Watching -->
+          <div class="stat-card">
+            <strong>
+              {{ anime | selectattr("status", "equalto", "Watching") | list |
+              length }}
+            </strong>
+
+            <span> Watching </span>
+          </div>
+
+          <!-- Completed -->
+          <div class="stat-card">
+            <strong>
+              {{ anime | selectattr("status", "equalto", "Completed") | list |
+              length }}
+            </strong>
+
+            <span> Completed </span>
+          </div>
+
+          <!-- Plan to Watch -->
+          <div class="stat-card">
+            <strong>
+              {{ anime | selectattr("status", "equalto", "Plan to Watch") | list
+              | length }}
+            </strong>
+
+            <span> Plan to Watch </span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>AnimeSora · Your personal anime diary.</p>
+    </footer>
+  </body>
+</html>
