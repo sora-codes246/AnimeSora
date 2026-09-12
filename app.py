@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from flask import Flask, render_template, request, redirect, url_for
 
 from database import (
@@ -9,7 +11,13 @@ from database import (
     delete_anime
 )
 
-from anime_api import search_anime
+from anime_api import (
+    search_anime,
+    get_currently_airing,
+ get_weekly_schedule
+
+)
+
 from anime_data import search_local_anime
 
 
@@ -18,10 +26,6 @@ app = Flask(__name__)
 
 initialize_database()
 
-
-# ========================================
-# HOME
-# ========================================
 
 @app.route("/")
 def home():
@@ -34,21 +38,132 @@ def home():
     )
 
 
-# ========================================
-# SCHEDULE
-# ========================================
-
 @app.route("/schedule")
 def schedule():
 
-    return render_template(
-        "schedule.html"
+    # Get anime that are currently airing
+    airing_anime = get_currently_airing(
+        limit=10
     )
 
+    # Today's date
+    today = date.today()
 
-# ========================================
-# MY ANIME
-# ========================================
+    # Find the Sunday of the current week
+    days_since_sunday = (
+        today.weekday() + 1
+    ) % 7
+
+    sunday = (
+        today
+        - timedelta(
+            days=days_since_sunday
+        )
+    )
+
+    # Create Sunday -> Saturday structure
+    schedule_days = []
+
+    for day_number in range(7):
+
+        current_date = (
+            sunday
+            + timedelta(
+                days=day_number
+            )
+        )
+
+        schedule_days.append({
+            "name": current_date.strftime(
+                "%A"
+            ),
+
+            "date": current_date,
+
+            "date_display": current_date.strftime(
+                "%d"
+            ),
+
+            "episodes": []
+        })
+
+
+    # Get episodes for each currently airing anime
+    for anime in airing_anime:
+
+        episodes = get_weekly_schedule(
+            anime["id"],
+            limit=10
+        )
+
+
+        for episode in episodes:
+
+            airdate = episode.get(
+                "airdate"
+            )
+
+
+            if not airdate:
+                continue
+
+
+            try:
+
+                episode_date = date.fromisoformat(
+                    airdate[:10]
+                )
+
+            except ValueError:
+
+                continue
+
+
+            # Only include episodes from
+            # the current Sunday-Saturday week
+            if (
+                episode_date < sunday
+                or episode_date > sunday + timedelta(days=6)
+            ):
+
+                continue
+
+
+            day_index = (
+                episode_date - sunday
+            ).days
+
+
+            schedule_days[
+                day_index
+            ]["episodes"].append({
+
+                "anime": anime,
+
+                "episode": episode
+
+            })
+
+
+    # Sort episodes inside each day
+    for day in schedule_days:
+
+        day["episodes"].sort(
+            key=lambda item: (
+                item["episode"].get("airdate")
+                or "",
+                item["anime"].get("title")
+                or ""
+            )
+        )
+
+
+    return render_template(
+        "schedule.html",
+        schedule_days=schedule_days,
+        today=today
+    )
+
 
 @app.route("/my-anime")
 def my_anime():
@@ -63,10 +178,6 @@ def my_anime():
         search_performed=False
     )
 
-
-# ========================================
-# SEARCH ANIME
-# ========================================
 
 @app.route("/search-anime")
 def search_anime_route():
@@ -84,13 +195,14 @@ def search_anime_route():
         )
 
 
-    # Try the live Kitsu API first
+    # Try the live API first
     search_results = search_anime(
         search_query
     )
 
 
-    # Use local fallback if API is unavailable
+    # If the API is unavailable,
+    # use our local fallback catalog.
     if not search_results:
 
         search_results = search_local_anime(
@@ -110,10 +222,6 @@ def search_anime_route():
     )
 
 
-# ========================================
-# ADD ANIME
-# ========================================
-
 @app.route("/add-anime", methods=["POST"])
 def add_anime_route():
 
@@ -123,56 +231,26 @@ def add_anime_route():
     ).strip()
 
 
-    if not title:
-
-        return redirect(
-            url_for("my_anime")
-        )
-
-
-    # User's tracking status
     status = request.form.get(
         "status",
         "Plan to Watch"
     )
 
 
-    # Current episode
     current_episode = request.form.get(
         "current_episode",
         "0"
     )
 
 
-    # Total episodes
     total_episodes = request.form.get(
         "total_episodes",
         ""
     )
 
 
-    # User score
     score = request.form.get(
         "score",
-        ""
-    )
-
-
-    # Anime information from API
-    title_english = request.form.get(
-        "title_english",
-        ""
-    )
-
-
-    title_romaji = request.form.get(
-        "title_romaji",
-        ""
-    )
-
-
-    title_native = request.form.get(
-        "title_native",
         ""
     )
 
@@ -183,45 +261,12 @@ def add_anime_route():
     )
 
 
-    anime_status = request.form.get(
-        "anime_status",
-        ""
-    )
+    if not title:
 
+        return redirect(
+            url_for("my_anime")
+        )
 
-    anime_type = request.form.get(
-        "anime_type",
-        ""
-    )
-
-
-    start_date = request.form.get(
-        "start_date",
-        ""
-    )
-
-
-    end_date = request.form.get(
-        "end_date",
-        ""
-    )
-
-
-    synopsis = request.form.get(
-        "synopsis",
-        ""
-    )
-
-
-    release_day = request.form.get(
-        "release_day",
-        ""
-    )
-
-
-    # ----------------------------------------
-    # Convert numeric values safely
-    # ----------------------------------------
 
     try:
 
@@ -260,55 +305,13 @@ def add_anime_route():
         score = None
 
 
-    # Prevent negative episode numbers
-    if current_episode < 0:
-
-        current_episode = 0
-
-
-    # Prevent going beyond total episodes
-    if (
-        total_episodes is not None
-        and current_episode > total_episodes
-    ):
-
-        current_episode = total_episodes
-
-
-    # ----------------------------------------
-    # Save everything
-    # ----------------------------------------
-
     add_anime(
         title=title,
-
-        title_english=title_english or None,
-
-        title_romaji=title_romaji or None,
-
-        title_native=title_native or None,
-
         status=status,
-
         current_episode=current_episode,
-
         total_episodes=total_episodes,
-
         score=score,
-
-        poster=poster or None,
-
-        anime_status=anime_status or None,
-
-        anime_type=anime_type or None,
-
-        start_date=start_date or None,
-
-        end_date=end_date or None,
-
-        synopsis=synopsis or None,
-
-        release_day=release_day or None
+        poster=poster or None
     )
 
 
@@ -316,10 +319,6 @@ def add_anime_route():
         url_for("my_anime")
     )
 
-
-# ========================================
-# EDIT ANIME
-# ========================================
 
 @app.route("/edit-anime/<int:anime_id>", methods=["POST"])
 def edit_anime(anime_id):
@@ -384,7 +383,7 @@ def edit_anime(anime_id):
 
 
     if (
-        anime["total_episodes"] is not None
+        anime["total_episodes"]
         and current_episode > anime["total_episodes"]
     ):
 
@@ -395,11 +394,8 @@ def edit_anime(anime_id):
 
     update_anime(
         anime_id=anime_id,
-
         status=status,
-
         current_episode=current_episode,
-
         score=score
     )
 
@@ -408,10 +404,6 @@ def edit_anime(anime_id):
         url_for("my_anime")
     )
 
-
-# ========================================
-# DELETE ANIME
-# ========================================
 
 @app.route("/delete-anime/<int:anime_id>", methods=["POST"])
 def delete_anime_route(anime_id):
@@ -425,10 +417,6 @@ def delete_anime_route(anime_id):
         url_for("my_anime")
     )
 
-
-# ========================================
-# RUN APPLICATION
-# ========================================
 
 if __name__ == "__main__":
 

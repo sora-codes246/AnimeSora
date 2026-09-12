@@ -1,370 +1,242 @@
-import sqlite3
-from pathlib import Path
+import os
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
 
 
-# ========================================
-# DATABASE
-# ========================================
+# =========================================================
+# LOAD ENVIRONMENT VARIABLES
+# =========================================================
 
-DATABASE = Path("animesora.db")
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-# ========================================
-# CONNECTION
-# ========================================
+# =========================================================
+# DATABASE CONNECTION
+# =========================================================
 
 def get_connection():
 
-    connection = sqlite3.connect(
-        DATABASE
-    )
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL is not set. "
+            "Make sure your .env file contains DATABASE_URL."
+        )
 
-    connection.row_factory = sqlite3.Row
+    connection = psycopg2.connect(
+        DATABASE_URL,
+        sslmode="require"
+    )
 
     return connection
 
 
-# ========================================
+# =========================================================
 # INITIALIZE DATABASE
-# ========================================
+# =========================================================
 
 def initialize_database():
 
     connection = get_connection()
 
+    try:
 
-    # ----------------------------------------
-    # Create the table if it doesn't exist
-    # ----------------------------------------
+        with connection.cursor() as cursor:
 
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS anime (
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS anime (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'Plan to Watch',
+                    current_episode INTEGER NOT NULL DEFAULT 0,
+                    total_episodes INTEGER,
+                    score REAL,
+                    poster TEXT,
+                    release_day TEXT
+                )
+            """)
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        connection.commit()
 
-            title TEXT NOT NULL,
+    finally:
 
-            title_english TEXT,
-
-            title_romaji TEXT,
-
-            title_native TEXT,
-
-            status TEXT NOT NULL
-                DEFAULT 'Plan to Watch',
-
-            current_episode INTEGER NOT NULL
-                DEFAULT 0,
-
-            total_episodes INTEGER,
-
-            score REAL,
-
-            poster TEXT,
-
-            anime_status TEXT,
-
-            anime_type TEXT,
-
-            start_date TEXT,
-
-            end_date TEXT,
-
-            synopsis TEXT,
-
-            release_day TEXT
-        )
-    """)
+        connection.close()
 
 
-    # ----------------------------------------
-    # Automatically upgrade old databases
-    # ----------------------------------------
-
-    existing_columns = [
-
-        row["name"]
-
-        for row in connection.execute(
-            "PRAGMA table_info(anime)"
-        ).fetchall()
-
-    ]
-
-
-    new_columns = {
-
-        "title_english": "TEXT",
-
-        "title_romaji": "TEXT",
-
-        "title_native": "TEXT",
-
-        "anime_status": "TEXT",
-
-        "anime_type": "TEXT",
-
-        "start_date": "TEXT",
-
-        "end_date": "TEXT",
-
-        "synopsis": "TEXT"
-
-    }
-
-
-    for column_name, column_type in new_columns.items():
-
-        if column_name not in existing_columns:
-
-            connection.execute(
-                f"""
-                ALTER TABLE anime
-                ADD COLUMN {column_name} {column_type}
-                """
-            )
-
-
-    connection.commit()
-
-    connection.close()
-
-
-# ========================================
+# =========================================================
 # GET ALL ANIME
-# ========================================
+# =========================================================
 
 def get_all_anime():
 
     connection = get_connection()
 
+    try:
 
-    anime = connection.execute("""
-        SELECT *
-        FROM anime
-        ORDER BY title
-    """).fetchall()
+        with connection.cursor(
+            cursor_factory=RealDictCursor
+        ) as cursor:
+
+            cursor.execute("""
+                SELECT *
+                FROM anime
+                ORDER BY title
+            """)
+
+            anime = cursor.fetchall()
+
+            return anime
+
+    finally:
+
+        connection.close()
 
 
-    connection.close()
-
-
-    return anime
-
-
-# ========================================
-# GET ONE ANIME
-# ========================================
+# =========================================================
+# GET SINGLE ANIME
+# =========================================================
 
 def get_anime(anime_id):
 
     connection = get_connection()
 
+    try:
 
-    anime = connection.execute("""
-        SELECT *
-        FROM anime
-        WHERE id = ?
-    """, (
-        anime_id,
-    )).fetchone()
+        with connection.cursor(
+            cursor_factory=RealDictCursor
+        ) as cursor:
+
+            cursor.execute("""
+                SELECT *
+                FROM anime
+                WHERE id = %s
+            """, (anime_id,))
+
+            anime = cursor.fetchone()
+
+            return anime
+
+    finally:
+
+        connection.close()
 
 
-    connection.close()
-
-
-    return anime
-
-
-# ========================================
+# =========================================================
 # ADD ANIME
-# ========================================
+# =========================================================
 
 def add_anime(
-
     title,
-
-    title_english=None,
-
-    title_romaji=None,
-
-    title_native=None,
-
     status="Plan to Watch",
-
     current_episode=0,
-
     total_episodes=None,
-
     score=None,
-
     poster=None,
-
-    anime_status=None,
-
-    anime_type=None,
-
-    start_date=None,
-
-    end_date=None,
-
-    synopsis=None,
-
     release_day=None
-
 ):
 
     connection = get_connection()
 
+    try:
 
-    connection.execute("""
-        INSERT INTO anime (
+        with connection.cursor() as cursor:
 
-            title,
+            cursor.execute("""
+                INSERT INTO anime (
+                    title,
+                    status,
+                    current_episode,
+                    total_episodes,
+                    score,
+                    poster,
+                    release_day
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+            """, (
+                title,
+                status,
+                current_episode,
+                total_episodes,
+                score,
+                poster,
+                release_day
+            ))
 
-            title_english,
+        connection.commit()
 
-            title_romaji,
+    finally:
 
-            title_native,
-
-            status,
-
-            current_episode,
-
-            total_episodes,
-
-            score,
-
-            poster,
-
-            anime_status,
-
-            anime_type,
-
-            start_date,
-
-            end_date,
-
-            synopsis,
-
-            release_day
-
-        )
-
-        VALUES (
-
-            ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?,
-            ?, ?, ?
-
-        )
-    """, (
-
-        title,
-
-        title_english,
-
-        title_romaji,
-
-        title_native,
-
-        status,
-
-        current_episode,
-
-        total_episodes,
-
-        score,
-
-        poster,
-
-        anime_status,
-
-        anime_type,
-
-        start_date,
-
-        end_date,
-
-        synopsis,
-
-        release_day
-
-    ))
+        connection.close()
 
 
-    connection.commit()
-
-    connection.close()
-
-
-# ========================================
+# =========================================================
 # UPDATE ANIME
-# ========================================
+# =========================================================
 
 def update_anime(
-
     anime_id,
-
     status,
-
     current_episode,
-
     score
-
 ):
 
     connection = get_connection()
 
+    try:
 
-    connection.execute("""
-        UPDATE anime
+        with connection.cursor() as cursor:
 
-        SET
+            cursor.execute("""
+                UPDATE anime
+                SET
+                    status = %s,
+                    current_episode = %s,
+                    score = %s
+                WHERE id = %s
+            """, (
+                status,
+                current_episode,
+                score,
+                anime_id
+            ))
 
-            status = ?,
+        connection.commit()
 
-            current_episode = ?,
+    finally:
 
-            score = ?
-
-        WHERE id = ?
-    """, (
-
-        status,
-
-        current_episode,
-
-        score,
-
-        anime_id
-
-    ))
-
-
-    connection.commit()
-
-    connection.close()
+        connection.close()
 
 
-# ========================================
+# =========================================================
 # DELETE ANIME
-# ========================================
+# =========================================================
 
 def delete_anime(anime_id):
 
     connection = get_connection()
 
+    try:
 
-    connection.execute("""
-        DELETE FROM anime
-        WHERE id = ?
-    """, (
-        anime_id,
-    ))
+        with connection.cursor() as cursor:
 
+            cursor.execute("""
+                DELETE FROM anime
+                WHERE id = %s
+            """, (anime_id,))
 
-    connection.commit()
+        connection.commit()
 
-    connection.close()
+    finally:
+
+        connection.close()

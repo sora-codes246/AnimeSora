@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Schedule | AnimeSora</title>
@@ -17,9 +18,11 @@
       <div class="logo">Anime<span>Sora</span></div>
 
       <div class="nav-links">
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('schedule') }}" class="active">Schedule</a>
-        <a href="#">My Anime</a>
+        <a href="{{ url_for('home') }}"> Home </a>
+
+        <a href="{{ url_for('schedule') }}" class="active"> Schedule </a>
+
+        <a href="{{ url_for('my_anime') }}"> My Anime </a>
       </div>
     </nav>
 
@@ -29,104 +32,61 @@
 
         <h1>Anime Schedule</h1>
 
-        <p>See what's airing throughout the week.</p>
+        <p>Automatically updated from the latest anime schedule.</p>
       </section>
 
       <section class="schedule">
+        {% for day in schedule_days %}
+
         <div class="day">
           <div class="day-header">
-            <span>Sunday</span>
-            <small>01</small>
+            <span> {{ day["name"] }} </span>
           </div>
+
+          {% if day["episodes"] %} {% for anime in day["episodes"] %}
 
           <div class="schedule-card">
+            {% set image = ( anime.get("images", {}) .get("jpg", {})
+            .get("large_image_url") ) %} {% if image %}
+
+            <img
+              src="{{ image }}"
+              alt="{{ anime.get('title', 'Anime') }}"
+              class="schedule-poster"
+            />
+
+            {% else %}
+
             <div class="schedule-poster">ANIME</div>
 
-            <div>
-              <h3>Your Anime</h3>
-              <p>Episode 01</p>
-              <span>Sunday</span>
+            {% endif %}
+
+            <div class="schedule-info">
+              <h3>{{ anime.get("title", "Unknown Anime") }}</h3>
+
+              {% set broadcast = anime.get("broadcast", {}) %} {% if
+              broadcast.get("time") %}
+
+              <p>{{ broadcast.get("time") }}</p>
+
+              {% endif %} {% if broadcast.get("string") %}
+
+              <span> {{ broadcast.get("string") }} </span>
+
+              {% endif %}
             </div>
           </div>
-        </div>
 
-        <div class="day">
-          <div class="day-header">
-            <span>Monday</span>
-            <small>02</small>
-          </div>
+          {% endfor %} {% else %}
 
           <div class="empty-day">
             <p>No releases yet</p>
           </div>
+
+          {% endif %}
         </div>
 
-        <div class="day">
-          <div class="day-header">
-            <span>Tuesday</span>
-            <small>03</small>
-          </div>
-
-          <div class="schedule-card">
-            <div class="schedule-poster">ANIME</div>
-
-            <div>
-              <h3>Another Anime</h3>
-              <p>Episode 12</p>
-              <span>Tuesday</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="day">
-          <div class="day-header">
-            <span>Wednesday</span>
-            <small>04</small>
-          </div>
-
-          <div class="empty-day">
-            <p>No releases yet</p>
-          </div>
-        </div>
-
-        <div class="day">
-          <div class="day-header">
-            <span>Thursday</span>
-            <small>05</small>
-          </div>
-
-          <div class="schedule-card">
-            <div class="schedule-poster">ANIME</div>
-
-            <div>
-              <h3>Coming Soon</h3>
-              <p>Episode 08</p>
-              <span>Thursday</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="day">
-          <div class="day-header">
-            <span>Friday</span>
-            <small>06</small>
-          </div>
-
-          <div class="empty-day">
-            <p>No releases yet</p>
-          </div>
-        </div>
-
-        <div class="day">
-          <div class="day-header">
-            <span>Saturday</span>
-            <small>07</small>
-          </div>
-
-          <div class="empty-day">
-            <p>No releases yet</p>
-          </div>
-        </div>
+        {% endfor %}
       </section>
     </main>
 
