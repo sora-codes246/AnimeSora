@@ -2531,3 +2531,81 @@ body.modal-open {
     transform: translateY(0) scale(1);
   }
 }
+/* ============================= */
+/* AnimeSora Private Lock Screen */
+/* ============================= */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 45px 35px;
+  text-align: center;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+
+.login-logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 35px;
+}
+
+.login-icon {
+  font-size: 52px;
+  margin-bottom: 20px;
+}
+
+.login-card h1 {
+  margin: 0 0 10px;
+}
+
+.login-card p {
+  margin: 0 0 28px;
+  opacity: 0.7;
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font-size: 16px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.login-card input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.login-card button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-error {
+  margin-top: 18px;
+  font-size: 14px;
+}

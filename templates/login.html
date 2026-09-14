@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>AnimeSora — Locked</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-logo">AnimeSora</div>
+
+        <div class="login-icon">🔒</div>
+
+        <h1>Private Diary</h1>
+
+        <p>Enter your password to continue.</p>
+
+        <form method="POST">
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter password"
+            autocomplete="current-password"
+            required
+            autofocus
+          />
+
+          <button type="submit">Unlock</button>
+        </form>
+
+        {% if error %}
+
+        <div class="login-error">{{ error }}</div>
+
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

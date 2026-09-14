@@ -1,6 +1,14 @@
 from datetime import date, timedelta
+import os
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session
+)
 
 from database import (
     initialize_database,
@@ -14,8 +22,7 @@ from database import (
 from anime_api import (
     search_anime,
     get_currently_airing,
- get_weekly_schedule
-
+    get_weekly_schedule
 )
 
 from anime_data import search_local_anime
@@ -23,8 +30,78 @@ from anime_data import search_local_anime
 
 app = Flask(__name__)
 
+# Secret key used to securely manage login sessions.
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "animesora-local-development-key"
+)
+
+# Password is stored as an environment variable.
+APP_PASSWORD = os.environ.get(
+    "ANIMESORA_PASSWORD",
+    ""
+)
+
 
 initialize_database()
+
+
+@app.before_request
+def require_login():
+
+    # These pages are always accessible.
+    allowed_routes = {
+        "login",
+        "static"
+    }
+
+    if request.endpoint in allowed_routes:
+        return
+
+    # If the user is not logged in,
+    # send them to the lock screen.
+    if not session.get("authenticated"):
+        return redirect(
+            url_for("login")
+        )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    error = None
+
+    if request.method == "POST":
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        if password == APP_PASSWORD and APP_PASSWORD:
+
+            session["authenticated"] = True
+
+            return redirect(
+                url_for("home")
+            )
+
+        error = "Incorrect password."
+
+    return render_template(
+        "login.html",
+        error=error
+    )
+
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return redirect(
+        url_for("login")
+    )
 
 
 @app.route("/")
@@ -41,15 +118,12 @@ def home():
 @app.route("/schedule")
 def schedule():
 
-    # Get anime that are currently airing
     airing_anime = get_currently_airing(
         limit=10
     )
 
-    # Today's date
     today = date.today()
 
-    # Find the Sunday of the current week
     days_since_sunday = (
         today.weekday() + 1
     ) % 7
@@ -61,7 +135,6 @@ def schedule():
         )
     )
 
-    # Create Sunday -> Saturday structure
     schedule_days = []
 
     for day_number in range(7):
@@ -88,7 +161,6 @@ def schedule():
         })
 
 
-    # Get episodes for each currently airing anime
     for anime in airing_anime:
 
         episodes = get_weekly_schedule(
@@ -96,17 +168,14 @@ def schedule():
             limit=10
         )
 
-
         for episode in episodes:
 
             airdate = episode.get(
                 "airdate"
             )
 
-
             if not airdate:
                 continue
-
 
             try:
 
@@ -118,9 +187,6 @@ def schedule():
 
                 continue
 
-
-            # Only include episodes from
-            # the current Sunday-Saturday week
             if (
                 episode_date < sunday
                 or episode_date > sunday + timedelta(days=6)
@@ -128,11 +194,9 @@ def schedule():
 
                 continue
 
-
             day_index = (
                 episode_date - sunday
             ).days
-
 
             schedule_days[
                 day_index
@@ -145,7 +209,6 @@ def schedule():
             })
 
 
-    # Sort episodes inside each day
     for day in schedule_days:
 
         day["episodes"].sort(
@@ -187,7 +250,6 @@ def search_anime_route():
         ""
     ).strip()
 
-
     if not search_query:
 
         return redirect(
@@ -195,14 +257,11 @@ def search_anime_route():
         )
 
 
-    # Try the live API first
     search_results = search_anime(
         search_query
     )
 
 
-    # If the API is unavailable,
-    # use our local fallback catalog.
     if not search_results:
 
         search_results = search_local_anime(
@@ -230,30 +289,25 @@ def add_anime_route():
         ""
     ).strip()
 
-
     status = request.form.get(
         "status",
         "Plan to Watch"
     )
-
 
     current_episode = request.form.get(
         "current_episode",
         "0"
     )
 
-
     total_episodes = request.form.get(
         "total_episodes",
         ""
     )
 
-
     score = request.form.get(
         "score",
         ""
     )
-
 
     poster = request.form.get(
         "poster",
@@ -340,12 +394,10 @@ def edit_anime(anime_id):
         "Plan to Watch"
     )
 
-
     current_episode = request.form.get(
         "current_episode",
         "0"
     )
-
 
     score = request.form.get(
         "score",
@@ -411,7 +463,6 @@ def delete_anime_route(anime_id):
     delete_anime(
         anime_id
     )
-
 
     return redirect(
         url_for("my_anime")
